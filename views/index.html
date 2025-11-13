@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login / Register</title>
+  <style>
+    body {font-family: Arial; background: #f5f5f5; display: flex; justify-content: center; align-items: center; height: 100vh;}
+    .box {background: white; padding: 2em; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 300px;}
+    input, button {width: 100%; padding: 10px; margin: 5px 0;}
+    button {background: #007bff; border: none; color: white; cursor: pointer;}
+    button:hover {background: #0056b3;}
+    #toggle {text-align: center; color: #007bff; cursor: pointer; margin-top: 10px;}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2 id="formTitle">Login</h2>
+    <form id="loginForm">
+      <input id="username" placeholder="Username" required>
+      <input id="password" type="password" placeholder="Password" required>
+      <button>Login</button>
+    </form>
+
+    <form id="registerForm" style="display:none;">
+      <input id="newUsername" placeholder="Username" required>
+      <input id="newPassword" type="password" placeholder="Password" required>
+      <input id="newEmail" type="email" placeholder="Email (optional)">
+      <button>Register</button>
+    </form>
+
+    <div id="toggle">Don't have an account? Register</div>
+  </div>
+
+  <script>
+    const toggle = document.getElementById("toggle");
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+    const formTitle = document.getElementById("formTitle");
+
+    toggle.addEventListener("click", () => {
+      if (loginForm.style.display === "none") {
+        loginForm.style.display = "block";
+        registerForm.style.display = "none";
+        formTitle.textContent = "Login";
+        toggle.textContent = "Don't have an account? Register";
+      } else {
+        loginForm.style.display = "none";
+        registerForm.style.display = "block";
+        formTitle.textContent = "Register";
+        toggle.textContent = "Already have an account? Login";
+      }
+    });
+
+    loginForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value.trim();
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        window.location.href = "/chat.html";
+      } else alert(data.error);
+    });
+
+    registerForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const username = newUsername.value.trim();
+      const password = newPassword.value.trim();
+      const email = newEmail.value.trim();
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ username, password, email })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Account created! You can log in now.");
+        toggle.click();
+      } else alert(data.error);
+    });
+
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const newUsername = document.getElementById("newUsername");
+    const newPassword = document.getElementById("newPassword");
+    const newEmail = document.getElementById("newEmail");
+  </script>
+</body>
+</html>
