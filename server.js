@@ -5,17 +5,15 @@ import dotenv from "dotenv";
 import { initDB } from "./db.js";
 
 dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET;
+const db = await initDB();
 
 app.use(express.json());
 app.use(express.static("views"));
 
-const db = await initDB();
-
-// Middleware for auth
+// Middleware: verify JWT
 function auth(req, res, next) {
   const header = req.headers.authorization;
   if (!header) return res.status(401).json({ error: "Missing token" });
@@ -28,10 +26,9 @@ function auth(req, res, next) {
   }
 }
 
-// Register
+// ✅ Register
 app.post("/api/register", async (req, res) => {
   const { username, password, email } = req.body;
-
   if (!username || !password)
     return res.status(400).json({ error: "Username and password required" });
 
@@ -42,7 +39,7 @@ app.post("/api/register", async (req, res) => {
       [username.toLowerCase(), email || null, hashed]
     );
 
-    // Admin detection based on email
+    // Mark as admin if email matches
     if (
       email === "bvpstudios012@gmail.com" ||
       email === "enchantedverze@gmail.com"
@@ -51,12 +48,12 @@ app.post("/api/register", async (req, res) => {
     }
 
     res.json({ message: "Account created successfully" });
-  } catch (err) {
+  } catch {
     res.status(400).json({ error: "Username or email already exists" });
   }
 });
 
-// Login
+// ✅ Login
 app.post("/api/login", async (req, res) => {
   const { username, password } = req.body;
   const user = await db.get(`SELECT * FROM users WHERE username=?`, [
@@ -75,7 +72,7 @@ app.post("/api/login", async (req, res) => {
   res.json({ token });
 });
 
-// Change username
+// ✅ Change username
 app.post("/api/change-username", auth, async (req, res) => {
   const { username } = req.body;
   if (!/^[a-zA-Z0-9_.]{3,20}$/.test(username))
@@ -91,7 +88,7 @@ app.post("/api/change-username", auth, async (req, res) => {
   }
 });
 
-// Post message (global chat)
+// ✅ Post message
 app.post("/api/chat", auth, async (req, res) => {
   const text = req.body.text?.trim();
   if (!text) return res.status(400).json({ error: "Empty message" });
@@ -102,7 +99,7 @@ app.post("/api/chat", auth, async (req, res) => {
   res.json({ message: "Message sent" });
 });
 
-// Get latest messages
+// ✅ Get messages
 app.get("/api/chat", async (req, res) => {
   const msgs = await db.all(
     `SELECT messages.id, users.username, messages.text, messages.created_at
@@ -112,7 +109,7 @@ app.get("/api/chat", async (req, res) => {
   res.json(msgs.reverse());
 });
 
-// Admin: delete user
+// ✅ Admin delete user
 app.delete("/api/users/:id", auth, async (req, res) => {
   if (req.user.role !== "admin")
     return res.status(403).json({ error: "Not allowed" });
@@ -121,10 +118,13 @@ app.delete("/api/users/:id", auth, async (req, res) => {
   res.json({ message: "User deleted" });
 });
 
-// Serve chat page
-app.get("/", (req, res) => {
-  res.sendFile(process.cwd() + "/views/chat.html");
-});
+// ✅ Serve pages
+app.get("/", (req, res) =>
+  res.sendFile(process.cwd() + "/views/index.html")
+);
+app.get("/chat.html", (req, res) =>
+  res.sendFile(process.cwd() + "/views/chat.html")
+);
 
 app.listen(PORT, () =>
   console.log(`✅ Server running at http://localhost:${PORT}`)
