@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Global Chat</title>
+  <style>
+    body {font-family: sans-serif; background: #f5f5f5; max-width: 600px; margin: 20px auto; padding: 20px;}
+    #messages {border: 1px solid #ccc; background: #fff; padding: 10px; height: 400px; overflow-y: scroll;}
+    input, button {padding: 8px;}
+  </style>
+</head>
+<body>
+  <h2>Global Chat</h2>
+  <div id="messages"></div>
+  <form id="sendForm">
+    <input id="text" placeholder="Type message">
+    <button>Send</button>
+  </form>
+  <hr>
+  <form id="changeForm">
+    <input id="newName" placeholder="New username">
+    <button>Change Username</button>
+  </form>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "/";
+
+    async function loadMessages() {
+      const res = await fetch("/api/chat");
+      const data = await res.json();
+      document.getElementById("messages").innerHTML = data.map(m =>
+        `<p><b>${m.username}:</b> ${m.text}</p>`).join("");
+    }
+
+    document.getElementById("sendForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const text = textInput.value.trim();
+      if (!text) return;
+      await fetch("/api/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + token},
+        body: JSON.stringify({ text })
+      });
+      textInput.value = "";
+      loadMessages();
+    });
+
+    document.getElementById("changeForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const username = newName.value.trim();
+      await fetch("/api/change-username", {
+        method: "POST",
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + token},
+        body: JSON.stringify({ username })
+      });
+      alert("Username changed!");
+    });
+
+    const textInput = document.getElementById("text");
+    const newName = document.getElementById("newName");
+    loadMessages();
+    setInterval(loadMessages, 3000);
+  </script>
+</body>
+</html>
